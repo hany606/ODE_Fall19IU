@@ -3,7 +3,7 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
-from matplotlib.pyplot import legend,plot
+from matplotlib.pyplot import legend,plot,figlegend
 import numpy as np
 from PIL import ImageTk, Image
 from math import exp as math_exp
@@ -92,26 +92,26 @@ class View:
 
         # self.label = Label(self.root, text="Exact", wraplength=50)
         # self.label.place(x=700, y=560)
-        self.initial_value_entry = Checkbutton(self.root, variable=self.exact_checkbox_val, text="Exact", command=self._update_callback)
-        self.initial_value_entry.place(x=700, y=580)
+        self.exact_checkbox = Checkbutton(self.root, variable=self.exact_checkbox_val, text="Exact", command=self._update_callback)
+        self.exact_checkbox.place(x=700, y=580)
 
         # self.label = Label(self.root, text="Euler", wraplength=50)
         # self.label.place(x=760, y=560)
-        self.initial_value_entry = Checkbutton(self.root, text="Euler", variable=self.euler_checkbox_val, command=self._update_callback)
-        self.initial_value_entry.place(x=760, y=580)
+        self.euler_checkbox = Checkbutton(self.root, text="Euler", variable=self.euler_checkbox_val, command=self._update_callback)
+        self.euler_checkbox.place(x=760, y=580)
 
         # self.label = Label(self.root, text="Improved Euler", wraplength=70)
         # self.label.place(x=840, y=560)
-        self.initial_value_entry = Checkbutton(self.root, text="Improved Euler", variable=self.improved_euler_checkbox_val, command=self._update_callback)
-        self.initial_value_entry.place(x=830, y=580)
+        self.improved_euler_checkbox = Checkbutton(self.root, text="Improved Euler", variable=self.improved_euler_checkbox_val, command=self._update_callback)
+        self.improved_euler_checkbox.place(x=830, y=580)
 
         # self.label = Label(self.root, text="Runge Kutte", wraplength=50)
         # self.label.place(x=920, y=560)
-        self.initial_value_entry = Checkbutton(self.root, text="Runge Kutte", variable=self.runge_kutte_checkbox_val, command=self._update_callback)
-        self.initial_value_entry.place(x=890, y=580)
+        self.runge_kutte_checkbox = Checkbutton(self.root, text="Runge Kutte", variable=self.runge_kutte_checkbox_val, command=self._update_callback)
+        self.runge_kutte_checkbox.place(x=890, y=580)
 
-        self.initial_value_entry = Checkbutton(self.root, text="Global", variable=self.local_global_error_checkbox_val, command=self._update_callback)
-        self.initial_value_entry.place(x=930, y=580)
+        self.local_global_error_checkbox = Checkbutton(self.root, text="Global", variable=self.local_global_error_checkbox_val, command=self._update_callback)
+        self.local_global_error_checkbox.place(x=930, y=580)
 
 
 
@@ -156,34 +156,49 @@ class View:
         self.fig_errors.clear()
         self.controller.set_parameters(self.initial_value_x.get(), self.initial_value_y.get(), self.max_X.get(), self.steps_n.get())
         obj = self.controller.compute()
+        axis_function = self.function_graph.add_subplot(111)
+        axis_error = self.fig_errors.add_subplot(111)
+        plots = [[None, None, None, None],["Exact", "Euler", "Improved Euler", "Runge Kutte"]]
         # print(len(obj["Exact"][0]), len(obj["Exact"][1]))
         if(self.exact_checkbox_val.get()):
-            self.function_graph.add_subplot(111).plot(obj["Function"]["Exact"][0],obj["Function"]["Exact"][1], color='green')
+            plots[0][0] = axis_function.plot(obj["Function"]["Exact"][0],obj["Function"]["Exact"][1], label="Exact", color='green')
         
         if(self.euler_checkbox_val.get()):
-            self.function_graph.add_subplot(111).plot(obj["Function"]["Euler"][0],obj["Function"]["Euler"][1], color='red')
-            print(len(obj["LocalError"]["Euler"][0]),len(obj["LocalError"]["Euler"][1]))
+            plots[0][1] = axis_function.plot(obj["Function"]["Euler"][0],obj["Function"]["Euler"][1], label="Euler", color='red')
+            # print(len(obj["LocalError"]["Euler"][0]),len(obj["LocalError"]["Euler"][1]))
             if(self.local_global_error_checkbox_val.get()):
-                self.fig_errors.add_subplot(111).plot(obj["GlobalError"]["Euler"][0],obj["GlobalError"]["Euler"][1], color='red')
+                axis_error.plot(obj["GlobalError"]["Euler"][0],obj["GlobalError"]["Euler"][1], color='red')
             else:
-                self.fig_errors.add_subplot(111).plot(obj["LocalError"]["Euler"][0],obj["LocalError"]["Euler"][1], color='red')
+                axis_error.plot(obj["LocalError"]["Euler"][0],obj["LocalError"]["Euler"][1], color='red')
 
         if(self.improved_euler_checkbox_val.get()):
-            self.function_graph.add_subplot(111).plot(obj["Function"]["ImprovedEuler"][0],obj["Function"]["ImprovedEuler"][1], color='blue')
+            plots[0][2] = axis_function.plot(obj["Function"]["ImprovedEuler"][0],obj["Function"]["ImprovedEuler"][1], label="Improved Euler", color='blue')
             if(self.local_global_error_checkbox_val.get()):
-                self.fig_errors.add_subplot(111).plot(obj["GlobalError"]["ImprovedEuler"][0],obj["GlobalError"]["ImprovedEuler"][1], color='blue')
+                axis_error.plot(obj["GlobalError"]["ImprovedEuler"][0],obj["GlobalError"]["ImprovedEuler"][1], color='blue')
             else:
-                self.fig_errors.add_subplot(111).plot(obj["LocalError"]["ImprovedEuler"][0],obj["LocalError"]["ImprovedEuler"][1], color='blue')
+                axis_error.plot(obj["LocalError"]["ImprovedEuler"][0],obj["LocalError"]["ImprovedEuler"][1], color='blue')
 
         if(self.runge_kutte_checkbox_val.get()):
-            self.function_graph.add_subplot(111).plot(obj["Function"]["RungeKutte"][0],obj["Function"]["RungeKutte"][1], color='yellow')
+            plots[0][3] = axis_function.plot(obj["Function"]["RungeKutte"][0],obj["Function"]["RungeKutte"][1], label="Runge Kutte", color='yellow')
             if(self.local_global_error_checkbox_val.get()):
-                self.fig_errors.add_subplot(111).plot(obj["GlobalError"]["RungeKutte"][0],obj["GlobalError"]["RungeKutte"][1], color='yellow')
+                axis_error.plot(obj["GlobalError"]["RungeKutte"][0],obj["GlobalError"]["RungeKutte"][1], color='yellow')
             else:
-                self.fig_errors.add_subplot(111).plot(obj["LocalError"]["RungeKutte"][0],obj["LocalError"]["RungeKutte"][1], color='yellow')
+                axis_error.plot(obj["LocalError"]["RungeKutte"][0],obj["LocalError"]["RungeKutte"][1], color='yellow')
         
-        self.fig_errors.legend(handless=)        
+        # self.fig_errors.legend(handless=[])
+        available_plots = [[],[]]
+        for i in range(4):
+            if(plots[0][i] is not None):
+                available_plots[0].append(plots[0][i][0])
+                available_plots[1].append(plots[1][i])
+        # print(available_plots[0])
+        # print(available_plots[1])
+        if(len(available_plots[0]) > 0):
+            axis_function.legend(handles=available_plots[0], labels=available_plots[1], loc='upper right')
+            axis_error.legend(handles=available_plots[0], labels=available_plots[1], loc='upper right')
+
         self.canvas_function_graph.draw()
         self.canvas_error_graph.draw()
- 
+        self.label.config(text="Where c1 = {:}".format(((1/math_exp(self.initial_value_x.get())*self.initial_value_y.get())-1)/math_exp(self.initial_value_x.get())))
+
         # legend(label="Line 1", linestyle='--', loc='upper right')
