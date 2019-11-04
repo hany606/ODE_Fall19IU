@@ -1,7 +1,8 @@
 import tkinter as tk
-from ODE_GUI import ODE_GUI
+from ODESolver.Model import Model
+
+
 
 root = tk.Tk()
-gui = ODE_GUI(root)
-
+gui = Model(root)
 root.mainloop()

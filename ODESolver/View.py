@@ -5,19 +5,22 @@ from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
 import numpy as np
 from PIL import ImageTk, Image
+from math import exp as math_exp
 
 
-class ODE_GUI:
-    def __init__(self, root, gui_app_title="ODE_GUI"):
+class View:
+    def __init__(self, root, controller, x0=-4, y0=1, X=4, n=100, gui_app_title="ODE_GUI"):
         # internal parameters
         self.root = root
         self.update_flag = 0
         self.gui_app_geometry = "1000x700"
         self.gui_app_title = gui_app_title
-        self.initial_value_x = IntVar(value=-4)
-        self.initial_value_y = IntVar(value=1)
-        self.steps_n = IntVar(value=100)
-        self.max_X = IntVar(value=4)
+        self.initial_value_x = DoubleVar(value=x0)
+        self.initial_value_y = DoubleVar(value=y0)
+        self.steps_n = DoubleVar(value=n)
+        self.max_X = DoubleVar(value=X)
+
+        self.controller = controller
 
         # GUI construction
         self.root.geometry(self.gui_app_geometry)
@@ -27,17 +30,17 @@ class ODE_GUI:
         self.function_graph_label.place(x=170,y = 30)
 
         self.function_graph = Figure(figsize=(4.75, 5), dpi=100)
-        t = np.arange(0, 3, .01)
-        self.function_graph.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
+        # t = np.arange(0, 3, .01)
+        # self.function_graph.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
 
-        self.canvas2 = FigureCanvasTkAgg(self.function_graph, master=self.root)  # A tk.DrawingArea.
-        self.canvas2.draw()
-        self.canvas2.get_tk_widget().place(x=10,y=50)
+        self.canvas_function_graph = FigureCanvasTkAgg(self.function_graph, master=self.root)  # A tk.DrawingArea.
+        self.canvas_function_graph.draw()
+        self.canvas_function_graph.get_tk_widget().place(x=10,y=50)
 
-        self.toolbar2 = NavigationToolbar2Tk(self.canvas2, self.root)
+        self.toolbar2 = NavigationToolbar2Tk(self.canvas_function_graph, self.root)
         self.toolbar2.place(x=5,y=660)
-        self.canvas2.get_tk_widget().place(x=10,y=50)
-        self.canvas2.mpl_connect("key_press_event", self.on_key_press)
+        self.canvas_function_graph.get_tk_widget().place(x=10,y=50)
+        self.canvas_function_graph.mpl_connect("key_press_event", self.on_key_press)
 
 
 
@@ -45,8 +48,8 @@ class ODE_GUI:
         self.errors_label.place(x=700,y = 30)
 
         self.fig_errors = Figure(figsize=(4.75, 5), dpi=100)
-        t = np.arange(0, 3, .01)
-        self.fig_errors.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
+        # t = np.arange(0, 3, .01)
+        # self.fig_errors.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
 
         self.canvas = FigureCanvasTkAgg(self.fig_errors, master=self.root)  # A tk.DrawingArea.
         self.canvas.draw()
@@ -62,7 +65,7 @@ class ODE_GUI:
         self.label = Label(self.root, text="Initial Value (x0)", wraplength=50)
         self.label.place(x=15, y=560)
         self.initial_value_entry = Entry(self.root, textvariable=self.initial_value_x, width=5)
-        self.initial_value_entry.place(x=10, y=620)
+        self.initial_value_entry.place(x=20, y=620)
 
         self.label = Label(self.root, text="Initial Value (y0)", wraplength=50)
         self.label.place(x=75, y=560)
@@ -99,9 +102,9 @@ class ODE_GUI:
         panel = Label(root, image = img)
         panel.image = img
         panel.place(x=370,y=600)
-        self.label = Label(self.root, text="Where c1 = 2926.35983701")
-        self.label.place(x=350, y=650)
-        
+        self.label = Label(self.root, text="Where c1 = {:}".format(((1/math_exp(x0)*y0)-1)/math_exp(x0)))
+        self.label.place(x=350, y=670)
+        self._update_callback()
 
     def on_key_press(self, event):
         # print("you pressed {}".format(event.key))
@@ -109,13 +112,28 @@ class ODE_GUI:
         if(event.key is "q"):
             self._quit()
 
-
-
-
     def _quit(self):
         self.root.quit()     # stops mainloop
         self.root.destroy()  # this is necessary on Windows to prevent
                         # Fatal Python Error: PyEval_RestoreThread: NULL tstate
 
     def _update_callback(self):
-        pass
+        self.controller.set_parameters(self.initial_value_x, self.initial_value_y, self.max_X, self.steps_n)
+        obj = self.controller.compute()
+        print(float(obj["Exact"][1][0]))
+
+        self.function_graph.add_subplot(111).plot(obj["Exact"][0],obj["Exact"][1], color='green')
+        self.function_graph.add_subplot(111).plot(obj["Euler"][0],obj["Euler"][1], color='red')
+        self.function_graph.add_subplot(111).plot(obj["ImprovedEuler"][0],obj["ImprovedEuler"][1], color='red')
+        self.function_graph.add_subplot(111).plot(obj["RungeKutte"][0],obj["RungeKutte"][1], color='red')
+        
+        
+        self.canvas_function_graph.draw()
+
+        # self.fig_errors.add_subplot(111).plot(obj.local_error.euler.x, obj.local_error.euler.y, color='green')
+        # self.fig_errors.add_subplot(111).plot(obj.local_error.improved_euler.x, obj.local_error.improved_euler.y, color='red')
+        # self.fig_errors.add_subplot(111).plot(obj.local_error.runge_kutta.x, obj.local_error.runge_kutta.y, color='blue')
+
+        # self.fig_errors.add_subplot(111).plot(obj.global_error.euler.x, obj.global_error.euler.y, color='green', linestyle='dashed')
+        # self.fig_errors.add_subplot(111).plot(obj.global_error.improved_euler.x, obj.global_error.improved_euler.y, color='red', linestyle='dashed')
+        # self.fig_errors.add_subplot(111).plot(obj.global_error.runge_kutta.x, obj.global_error.runge_kutta.y, color='blue', linestyle='dashed')
