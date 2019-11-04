@@ -3,6 +3,7 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
+from matplotlib.pyplot import legend,plot
 import numpy as np
 from PIL import ImageTk, Image
 from math import exp as math_exp
@@ -19,6 +20,11 @@ class View:
         self.initial_value_y = DoubleVar(value=y0)
         self.steps_n = DoubleVar(value=n)
         self.max_X = DoubleVar(value=X)
+        self.exact_checkbox_val = IntVar()
+        self.euler_checkbox_val = IntVar()
+        self.improved_euler_checkbox_val = IntVar()
+        self.runge_kutte_checkbox_val = IntVar()
+        self.local_global_error_checkbox_val = IntVar()
 
         self.controller = controller
 
@@ -51,15 +57,15 @@ class View:
         # t = np.arange(0, 3, .01)
         # self.fig_errors.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
 
-        self.canvas = FigureCanvasTkAgg(self.fig_errors, master=self.root)  # A tk.DrawingArea.
-        self.canvas.draw()
-        self.canvas.get_tk_widget().place(x=515,y=50)
+        self.canvas_error_graph = FigureCanvasTkAgg(self.fig_errors, master=self.root)  # A tk.DrawingArea.
+        self.canvas_error_graph .draw()
+        self.canvas_error_graph .get_tk_widget().place(x=515,y=50)
 
-        self.toolbar = NavigationToolbar2Tk(self.canvas, self.root)
+        self.toolbar = NavigationToolbar2Tk(self.canvas_error_graph , self.root)
         self.toolbar.update()
         self.toolbar.place(x=750,y=660)
-        self.canvas.get_tk_widget().place(x=515,y=50)
-        self.canvas.mpl_connect("key_press_event", self.on_key_press)
+        self.canvas_error_graph .get_tk_widget().place(x=515,y=50)
+        self.canvas_error_graph .mpl_connect("key_press_event", self.on_key_press)
 
 
         self.label = Label(self.root, text="Initial Value (x0)", wraplength=50)
@@ -81,6 +87,33 @@ class View:
         self.label.place(x=195, y=560)
         self.initial_value_entry = Entry(self.root, textvariable=self.max_X, width=5)
         self.initial_value_entry.place(x=190, y=620)
+
+
+
+        # self.label = Label(self.root, text="Exact", wraplength=50)
+        # self.label.place(x=700, y=560)
+        self.initial_value_entry = Checkbutton(self.root, variable=self.exact_checkbox_val, text="Exact", command=self._update_callback)
+        self.initial_value_entry.place(x=700, y=580)
+
+        # self.label = Label(self.root, text="Euler", wraplength=50)
+        # self.label.place(x=760, y=560)
+        self.initial_value_entry = Checkbutton(self.root, text="Euler", variable=self.euler_checkbox_val, command=self._update_callback)
+        self.initial_value_entry.place(x=760, y=580)
+
+        # self.label = Label(self.root, text="Improved Euler", wraplength=70)
+        # self.label.place(x=840, y=560)
+        self.initial_value_entry = Checkbutton(self.root, text="Improved Euler", variable=self.improved_euler_checkbox_val, command=self._update_callback)
+        self.initial_value_entry.place(x=830, y=580)
+
+        # self.label = Label(self.root, text="Runge Kutte", wraplength=50)
+        # self.label.place(x=920, y=560)
+        self.initial_value_entry = Checkbutton(self.root, text="Runge Kutte", variable=self.runge_kutte_checkbox_val, command=self._update_callback)
+        self.initial_value_entry.place(x=890, y=580)
+
+        self.initial_value_entry = Checkbutton(self.root, text="Global", variable=self.local_global_error_checkbox_val, command=self._update_callback)
+        self.initial_value_entry.place(x=930, y=580)
+
+
 
         self.update_button = Button(self.root, text="Update", command=self._update_callback)
         self.update_button.place(x=820,y=620)
@@ -108,7 +141,7 @@ class View:
 
     def on_key_press(self, event):
         # print("you pressed {}".format(event.key))
-        key_press_handler(event, self.canvas, self.toolbar)
+        key_press_handler(event, self.canvas_error_graph , self.toolbar)
         if(event.key is "q"):
             self._quit()
 
@@ -118,21 +151,39 @@ class View:
                         # Fatal Python Error: PyEval_RestoreThread: NULL tstate
 
     def _update_callback(self):
-        self.controller.set_parameters(self.initial_value_x, self.initial_value_y, self.max_X, self.steps_n)
+        # print("-***********************************")
+        self.function_graph.clear()
+        self.fig_errors.clear()
+        self.controller.set_parameters(self.initial_value_x.get(), self.initial_value_y.get(), self.max_X.get(), self.steps_n.get())
         obj = self.controller.compute()
+        # print(len(obj["Exact"][0]), len(obj["Exact"][1]))
+        if(self.exact_checkbox_val.get()):
+            self.function_graph.add_subplot(111).plot(obj["Function"]["Exact"][0],obj["Function"]["Exact"][1], color='green')
+        
+        if(self.euler_checkbox_val.get()):
+            self.function_graph.add_subplot(111).plot(obj["Function"]["Euler"][0],obj["Function"]["Euler"][1], color='red')
+            print(len(obj["LocalError"]["Euler"][0]),len(obj["LocalError"]["Euler"][1]))
+            if(self.local_global_error_checkbox_val.get()):
+                self.fig_errors.add_subplot(111).plot(obj["GlobalError"]["Euler"][0],obj["GlobalError"]["Euler"][1], color='red')
+            else:
+                self.fig_errors.add_subplot(111).plot(obj["LocalError"]["Euler"][0],obj["LocalError"]["Euler"][1], color='red')
 
-        self.function_graph.add_subplot(111).plot(obj["Exact"][0],obj["Exact"][1], color='green')
-        self.function_graph.add_subplot(111).plot(obj["Euler"][0],obj["Euler"][1], color='red')
-        # self.function_graph.add_subplot(111).plot(obj["ImprovedEuler"][0],obj["ImprovedEuler"][1], color='red')
-        # self.function_graph.add_subplot(111).plot(obj["RungeKutte"][0],obj["RungeKutte"][1], color='red')
+        if(self.improved_euler_checkbox_val.get()):
+            self.function_graph.add_subplot(111).plot(obj["Function"]["ImprovedEuler"][0],obj["Function"]["ImprovedEuler"][1], color='blue')
+            if(self.local_global_error_checkbox_val.get()):
+                self.fig_errors.add_subplot(111).plot(obj["GlobalError"]["ImprovedEuler"][0],obj["GlobalError"]["ImprovedEuler"][1], color='blue')
+            else:
+                self.fig_errors.add_subplot(111).plot(obj["LocalError"]["ImprovedEuler"][0],obj["LocalError"]["ImprovedEuler"][1], color='blue')
+
+        if(self.runge_kutte_checkbox_val.get()):
+            self.function_graph.add_subplot(111).plot(obj["Function"]["RungeKutte"][0],obj["Function"]["RungeKutte"][1], color='yellow')
+            if(self.local_global_error_checkbox_val.get()):
+                self.fig_errors.add_subplot(111).plot(obj["GlobalError"]["RungeKutte"][0],obj["GlobalError"]["RungeKutte"][1], color='yellow')
+            else:
+                self.fig_errors.add_subplot(111).plot(obj["LocalError"]["RungeKutte"][0],obj["LocalError"]["RungeKutte"][1], color='yellow')
         
-        
+        self.fig_errors.legend(handless=)        
         self.canvas_function_graph.draw()
-
-        # self.fig_errors.add_subplot(111).plot(obj.local_error.euler.x, obj.local_error.euler.y, color='green')
-        # self.fig_errors.add_subplot(111).plot(obj.local_error.improved_euler.x, obj.local_error.improved_euler.y, color='red')
-        # self.fig_errors.add_subplot(111).plot(obj.local_error.runge_kutta.x, obj.local_error.runge_kutta.y, color='blue')
-
-        # self.fig_errors.add_subplot(111).plot(obj.global_error.euler.x, obj.global_error.euler.y, color='green', linestyle='dashed')
-        # self.fig_errors.add_subplot(111).plot(obj.global_error.improved_euler.x, obj.global_error.improved_euler.y, color='red', linestyle='dashed')
-        # self.fig_errors.add_subplot(111).plot(obj.global_error.runge_kutta.x, obj.global_error.runge_kutta.y, color='blue', linestyle='dashed')
+        self.canvas_error_graph.draw()
+ 
+        # legend(label="Line 1", linestyle='--', loc='upper right')
