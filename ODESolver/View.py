@@ -120,12 +120,11 @@ class View:
     def _update_callback(self):
         self.controller.set_parameters(self.initial_value_x, self.initial_value_y, self.max_X, self.steps_n)
         obj = self.controller.compute()
-        print(float(obj["Exact"][1][0]))
 
         self.function_graph.add_subplot(111).plot(obj["Exact"][0],obj["Exact"][1], color='green')
         self.function_graph.add_subplot(111).plot(obj["Euler"][0],obj["Euler"][1], color='red')
-        self.function_graph.add_subplot(111).plot(obj["ImprovedEuler"][0],obj["ImprovedEuler"][1], color='red')
-        self.function_graph.add_subplot(111).plot(obj["RungeKutte"][0],obj["RungeKutte"][1], color='red')
+        # self.function_graph.add_subplot(111).plot(obj["ImprovedEuler"][0],obj["ImprovedEuler"][1], color='red')
+        # self.function_graph.add_subplot(111).plot(obj["RungeKutte"][0],obj["RungeKutte"][1], color='red')
         
         
         self.canvas_function_graph.draw()
