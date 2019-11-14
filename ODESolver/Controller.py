@@ -141,7 +141,7 @@ class LocalError(Error):
         # print(len(self.y))  
 class GlobalError(Error):
     def compute(self):
-        self.x = [i for i in np.arange(self.x0, self.X, ((self.X-self.x0))/self.n)]
+        self.x = [i for i in range(int(self.n))]
         # print(self.function)
         for i in range(int(self.n)):
             # print(i)
